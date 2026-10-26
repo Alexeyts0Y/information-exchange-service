@@ -1,0 +1,757 @@
+openapi: 3.0.0
+info:
+  title: Information Exchange Service
+  description: API для обмена информацией об угрозах.
+  version: 1.0.0
+
+paths:
+  /info/{md5}:
+    get:
+      summary: Получить информацию об угрозе по MD5
+      description: Возвращает полную информацию об угрозе для указанного MD5-хеша.
+      operationId: getInfoByMd5
+      parameters:
+        - name: md5
+          in: path
+          required: true
+          description: MD5-хеш файла (32 символа, шестнадцатеричные цифры)
+          schema:
+            type: string
+            pattern: '^[a-fA-F0-9]{32}$'
+            example: "d41d8cd98f00b204e9800998ecf8427e"
+      responses:
+        '200':
+          description: Успешный ответ с информацией об угрозе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Threat'
+        '404':
+          description: Угроза с указанным MD5 не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Некорректный формат MD5
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Обновить информацию об угрозе по MD5
+      description: Заменяет информацию о существующей угрозе.
+      operationId: updateThreat
+      parameters:
+        - name: md5
+          in: path
+          required: true
+          description: MD5-хеш обновляемой записи
+          schema:
+            type: string
+            pattern: '^[a-fA-F0-9]{32}$'
+            example: "d41d8cd98f00b204e9800998ecf8427e"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatUpdateRequest'
+      responses:
+        '200':
+          description: Информация успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Threat'
+        '400':
+          description: Некорректные данные запроса или MD5
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Угроза с указанным MD5 не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Конфликт версий (оптимистичная блокировка)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /info:
+    post:
+      summary: Создать новую запись об угрозе
+      description: Добавляет новую информацию об угрозе. MD5 должен быть уникальным.
+      operationId: createThreat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatCreateRequest'
+      responses:
+        '201':
+          description: Запись успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Threat'
+        '400':
+          description: Некорректные данные запроса (например, невалидный MD5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Угроза с таким MD5 уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Threat:
+      type: object
+      description: Каноническая сущность угрозы (полная запись, возвращаемая API)
+      required:
+        - md5
+        - name
+      properties:
+        md5:
+          type: string
+          pattern: '^[a-fA-F0-9]{32}$'
+          description: MD5-хеш файла (32 шестнадцатеричных символа)
+          example: "d41d8cd98f00b204e9800998ecf8427e"
+        sha1:
+          type: string
+          pattern: '^[a-fA-F0-9]{40}$'
+          description: SHA1-хеш файла (40 шестнадцатеричных символов)
+          example: "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        sha256:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+          description: SHA256-хеш файла (64 шестнадцатеричных символа)
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        name:
+          type: string
+          description: Название угрозы
+          example: "Trojan.Win32.Generic"
+        aliases:
+          type: array
+          description: Альтернативные названия угрозы
+          items:
+            type: string
+          example: ["Generic Trojan", "Win32.Trojan"]
+        file_name:
+          type: array
+          description: Известные имена файла
+          items:
+            type: string
+          example: ["invoice.exe", "update.exe"]
+        file_size:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Размер файла в байтах
+          example: 245760
+        file_type:
+          type: string
+          description: Тип файла (например, PE, PDF, DOCX, ELF)
+          example: "PE"
+        mime_type:
+          type: string
+          description: MIME-тип файла
+          example: "application/x-dosexec"
+        threat_type:
+          type: string
+          description: |
+            Категория угрозы. Множество значений открытое и может расширяться
+            по мере появления новых классов угроз, поэтому поле намеренно
+            описано как свободная строка, а не `enum`.
+
+            Рекомендуемые значения: `trojan`, `ransomware`, `worm`, `virus`,
+            `spyware`, `adware`, `rootkit`, `backdoor`, `keylogger`, `miner`,
+            `phishing`, `exploit`, `botnet`, `ddos`, `infostealer`, `wiper`,
+            `loader`, `lotl_attack`, `ai_powered`, `other`.
+          example: "trojan"
+        category:
+          type: string
+          description: Дополнительная категория (свободная форма)
+          example: "malware"
+        family:
+          type: string
+          description: Семейство угрозы
+          example: "Emotet"
+        platform:
+          type: array
+          description: |
+            Платформы, на которые нацелена угроза. Множество значений открытое
+            (появляются новые среды: IoT, Embedded и т.п.), поэтому поле
+            описано как массив свободных строк.
+
+            Рекомендуемые значения: `Windows`, `Linux`, `macOS`, `Android`,
+            `iOS`, `IoT`, `Embedded`, `FreeBSD`, `other`.
+          items:
+            type: string
+          example: ["Windows"]
+        severity:
+          type: string
+          description: Критичность угрозы (закрытая стабильная шкала)
+          enum: [low, medium, high, critical]
+          example: "high"
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Уверенность в записи (0–100)
+          example: 85
+        status:
+          type: string
+          description: Статус записи (внутреннее состояние сервиса)
+          enum: [active, resolved, false_positive, expired]
+          example: "active"
+        first_seen:
+          type: string
+          format: date-time
+          description: Когда угроза впервые обнаружена (ISO 8601, UTC)
+          example: "2026-01-10T12:00:00Z"
+        last_seen:
+          type: string
+          format: date-time
+          description: Когда угроза последний раз встречалась (ISO 8601, UTC)
+          example: "2026-10-20T08:30:00Z"
+        source:
+          $ref: '#/components/schemas/ThreatSource'
+        description:
+          type: string
+          description: Человекочитаемое описание угрозы
+          example: "Троян, устанавливающий автозапуск и связывающийся с C2-сервером."
+        tags:
+          type: array
+          description: Свободные метки для поиска и фильтрации
+          items:
+            type: string
+          example: ["executable", "persistence", "c2"]
+        references:
+          type: array
+          description: Ссылки на отчёты, статьи, внешние источники
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/report/123"]
+        detection_ratio:
+          type: string
+          description: Соотношение детектов антивирусов (например, 42/70)
+          example: "42/70"
+        detections:
+          type: array
+          description: Детекты антивирусных движков
+          items:
+            $ref: '#/components/schemas/Detection'
+        behaviors:
+          type: array
+          description: Поведенческие признаки
+          items:
+            type: string
+          example: ["file_encryption", "persistence", "c2_connection"]
+        network_iocs:
+          type: array
+          description: Сетевые IOC
+          items:
+            $ref: '#/components/schemas/NetworkIOC'
+        file_iocs:
+          type: array
+          description: Файловые IOC (пути, ключи реестра, имена файлов)
+          items:
+            $ref: '#/components/schemas/FileIOC'
+        recommended_action:
+          type: string
+          description: Рекомендуемое действие
+          example: "Изолировать хост и заблокировать C2-домен."
+        is_expired:
+          type: boolean
+          description: Флаг устаревания записи
+          example: false
+        ttl:
+          type: integer
+          format: int64
+          description: Время жизни записи в секундах (0 — бессрочно)
+          example: 86400
+        related_hashes:
+          type: array
+          description: Связанные хеши (другие MD5/SHA1/SHA256)
+          items:
+            type: string
+          example: ["d41d8cd98f00b204e9800998ecf8427e"]
+        reporter:
+          type: string
+          description: Кто добавил или подтвердил запись
+          example: "analyst@example.com"
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Версия записи (для оптимистичной блокировки)
+          example: 3
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Когда запись создана в сервисе
+          example: "2026-01-10T12:05:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Когда запись обновлена
+          example: "2026-10-20T08:35:00Z"
+
+    ThreatCreateRequest:
+      type: object
+      description: Тело запроса на создание новой записи об угрозе
+      required:
+        - md5
+        - name
+      properties:
+        md5:
+          type: string
+          pattern: '^[a-fA-F0-9]{32}$'
+          description: MD5-хеш файла (32 шестнадцатеричных символа)
+          example: "d41d8cd98f00b204e9800998ecf8427e"
+        sha1:
+          type: string
+          pattern: '^[a-fA-F0-9]{40}$'
+          description: SHA1-хеш файла (40 шестнадцатеричных символов)
+          example: "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        sha256:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+          description: SHA256-хеш файла (64 шестнадцатеричных символа)
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        name:
+          type: string
+          description: Название угрозы
+          example: "Trojan.Win32.Generic"
+        aliases:
+          type: array
+          description: Альтернативные названия угрозы
+          items:
+            type: string
+          example: ["Generic Trojan", "Win32.Trojan"]
+        file_name:
+          type: array
+          description: Известные имена файла
+          items:
+            type: string
+          example: ["invoice.exe", "update.exe"]
+        file_size:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Размер файла в байтах
+          example: 245760
+        file_type:
+          type: string
+          description: Тип файла (например, PE, PDF, DOCX, ELF)
+          example: "PE"
+        mime_type:
+          type: string
+          description: MIME-тип файла
+          example: "application/x-dosexec"
+        threat_type:
+          type: string
+          description: |
+            Категория угрозы (см. описание в `Threat.threat_type`).
+            Рекомендуемые значения: `trojan`, `ransomware`, `worm`, `virus`,
+            `spyware`, `adware`, `rootkit`, `backdoor`, `keylogger`, `miner`,
+            `phishing`, `exploit`, `botnet`, `ddos`, `infostealer`, `wiper`,
+            `loader`, `lotl_attack`, `ai_powered`, `other`.
+          example: "trojan"
+        category:
+          type: string
+          description: Дополнительная категория (свободная форма)
+          example: "malware"
+        family:
+          type: string
+          description: Семейство угрозы
+          example: "Emotet"
+        platform:
+          type: array
+          description: |
+            Платформы, на которые нацелена угроза.
+            Рекомендуемые значения: `Windows`, `Linux`, `macOS`, `Android`,
+            `iOS`, `IoT`, `Embedded`, `FreeBSD`, `other`.
+          items:
+            type: string
+          example: ["Windows"]
+        severity:
+          type: string
+          description: Критичность угрозы
+          enum: [low, medium, high, critical]
+          example: "high"
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Уверенность в записи (0–100)
+          example: 85
+        status:
+          type: string
+          description: Статус записи
+          enum: [active, resolved, false_positive, expired]
+          example: "active"
+        first_seen:
+          type: string
+          format: date-time
+          description: Когда угроза впервые обнаружена (ISO 8601, UTC)
+          example: "2026-01-10T12:00:00Z"
+        last_seen:
+          type: string
+          format: date-time
+          description: Когда угроза последний раз встречалась (ISO 8601, UTC)
+          example: "2026-10-20T08:30:00Z"
+        source:
+          $ref: '#/components/schemas/ThreatSource'
+        description:
+          type: string
+          description: Человекочитаемое описание угрозы
+          example: "Троян, устанавливающий автозапуск и связывающийся с C2-сервером."
+        tags:
+          type: array
+          description: Свободные метки для поиска и фильтрации
+          items:
+            type: string
+          example: ["executable", "persistence", "c2"]
+        references:
+          type: array
+          description: Ссылки на отчёты, статьи, внешние источники
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/report/123"]
+        detection_ratio:
+          type: string
+          description: Соотношение детектов антивирусов (например, 42/70)
+          example: "42/70"
+        detections:
+          type: array
+          description: Детекты антивирусных движков
+          items:
+            $ref: '#/components/schemas/Detection'
+        behaviors:
+          type: array
+          description: Поведенческие признаки
+          items:
+            type: string
+          example: ["file_encryption", "persistence", "c2_connection"]
+        network_iocs:
+          type: array
+          description: Сетевые IOC
+          items:
+            $ref: '#/components/schemas/NetworkIOC'
+        file_iocs:
+          type: array
+          description: Файловые IOC (пути, ключи реестра, имена файлов)
+          items:
+            $ref: '#/components/schemas/FileIOC'
+        recommended_action:
+          type: string
+          description: Рекомендуемое действие
+          example: "Изолировать хост и заблокировать C2-домен."
+        is_expired:
+          type: boolean
+          description: Флаг устаревания записи
+          example: false
+        ttl:
+          type: integer
+          format: int64
+          description: Время жизни записи в секундах (0 — бессрочно)
+          example: 86400
+        related_hashes:
+          type: array
+          description: Связанные хеши (другие MD5/SHA1/SHA256)
+          items:
+            type: string
+          example: ["d41d8cd98f00b204e9800998ecf8427e"]
+        reporter:
+          type: string
+          description: Кто добавил или подтвердил запись
+          example: "analyst@example.com"
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Версия записи (для оптимистичной блокировки)
+          example: 1
+
+    ThreatUpdateRequest:
+      type: object
+      description: |
+        Тело запроса на обновление существующей записи об угрозе.
+        MD5 передаётся в path-параметре и здесь не указывается.
+      required:
+        - name
+      properties:
+        sha1:
+          type: string
+          pattern: '^[a-fA-F0-9]{40}$'
+          description: SHA1-хеш файла (40 шестнадцатеричных символов)
+          example: "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        sha256:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+          description: SHA256-хеш файла (64 шестнадцатеричных символа)
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        name:
+          type: string
+          description: Название угрозы
+          example: "Trojan.Win32.Generic"
+        aliases:
+          type: array
+          description: Альтернативные названия угрозы
+          items:
+            type: string
+          example: ["Generic Trojan", "Win32.Trojan"]
+        file_name:
+          type: array
+          description: Известные имена файла
+          items:
+            type: string
+          example: ["invoice.exe", "update.exe"]
+        file_size:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Размер файла в байтах
+          example: 245760
+        file_type:
+          type: string
+          description: Тип файла (например, PE, PDF, DOCX, ELF)
+          example: "PE"
+        mime_type:
+          type: string
+          description: MIME-тип файла
+          example: "application/x-dosexec"
+        threat_type:
+          type: string
+          description: |
+            Категория угрозы (см. описание в `Threat.threat_type`).
+            Рекомендуемые значения: `trojan`, `ransomware`, `worm`, `virus`,
+            `spyware`, `adware`, `rootkit`, `backdoor`, `keylogger`, `miner`,
+            `phishing`, `exploit`, `botnet`, `ddos`, `infostealer`, `wiper`,
+            `loader`, `lotl_attack`, `ai_powered`, `other`.
+          example: "trojan"
+        category:
+          type: string
+          description: Дополнительная категория (свободная форма)
+          example: "malware"
+        family:
+          type: string
+          description: Семейство угрозы
+          example: "Emotet"
+        platform:
+          type: array
+          description: |
+            Платформы, на которые нацелена угроза.
+            Рекомендуемые значения: `Windows`, `Linux`, `macOS`, `Android`,
+            `iOS`, `IoT`, `Embedded`, `FreeBSD`, `other`.
+          items:
+            type: string
+          example: ["Windows"]
+        severity:
+          type: string
+          description: Критичность угрозы
+          enum: [low, medium, high, critical]
+          example: "high"
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Уверенность в записи (0–100)
+          example: 85
+        status:
+          type: string
+          description: Статус записи
+          enum: [active, resolved, false_positive, expired]
+          example: "active"
+        first_seen:
+          type: string
+          format: date-time
+          description: Когда угроза впервые обнаружена (ISO 8601, UTC)
+          example: "2026-01-10T12:00:00Z"
+        last_seen:
+          type: string
+          format: date-time
+          description: Когда угроза последний раз встречалась (ISO 8601, UTC)
+          example: "2026-10-20T08:30:00Z"
+        source:
+          $ref: '#/components/schemas/ThreatSource'
+        description:
+          type: string
+          description: Человекочитаемое описание угрозы
+          example: "Троян, устанавливающий автозапуск и связывающийся с C2-сервером."
+        tags:
+          type: array
+          description: Свободные метки для поиска и фильтрации
+          items:
+            type: string
+          example: ["executable", "persistence", "c2"]
+        references:
+          type: array
+          description: Ссылки на отчёты, статьи, внешние источники
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/report/123"]
+        detection_ratio:
+          type: string
+          description: Соотношение детектов антивирусов (например, 42/70)
+          example: "42/70"
+        detections:
+          type: array
+          description: Детекты антивирусных движков
+          items:
+            $ref: '#/components/schemas/Detection'
+        behaviors:
+          type: array
+          description: Поведенческие признаки
+          items:
+            type: string
+          example: ["file_encryption", "persistence", "c2_connection"]
+        network_iocs:
+          type: array
+          description: Сетевые IOC
+          items:
+            $ref: '#/components/schemas/NetworkIOC'
+        file_iocs:
+          type: array
+          description: Файловые IOC (пути, ключи реестра, имена файлов)
+          items:
+            $ref: '#/components/schemas/FileIOC'
+        recommended_action:
+          type: string
+          description: Рекомендуемое действие
+          example: "Изолировать хост и заблокировать C2-домен."
+        is_expired:
+          type: boolean
+          description: Флаг устаревания записи
+          example: false
+        ttl:
+          type: integer
+          format: int64
+          description: Время жизни записи в секундах (0 — бессрочно)
+          example: 86400
+        related_hashes:
+          type: array
+          description: Связанные хеши (другие MD5/SHA1/SHA256)
+          items:
+            type: string
+          example: ["d41d8cd98f00b204e9800998ecf8427e"]
+        reporter:
+          type: string
+          description: Кто добавил или подтвердил запись
+          example: "analyst@example.com"
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Версия записи (для оптимистичной блокировки)
+          example: 3
+
+    ThreatSource:
+      type: object
+      description: Источник данных об угрозе
+      properties:
+        name:
+          type: string
+          example: "Internal Sandbox"
+        type:
+          type: string
+          description: Тип источника (закрытое множество)
+          enum: [sandbox, vendor, researcher, internal, feed, other]
+          example: "sandbox"
+        url:
+          type: string
+          format: uri
+          example: "https://example.com/sandbox"
+
+    Detection:
+      type: object
+      description: Детект антивирусного движка
+      properties:
+        engine:
+          type: string
+          example: "Kaspersky"
+        version:
+          type: string
+          example: "21.3.10.391"
+        signature:
+          type: string
+          example: "Trojan.Win32.Generic"
+
+    NetworkIOC:
+      type: object
+      description: Сетевой индикатор компрометации
+      properties:
+        type:
+          type: string
+          description: Тип сетевого IOC (закрытое множество)
+          enum: [ip, domain, url]
+          example: "domain"
+        value:
+          type: string
+          example: "evil.example.com"
+        description:
+          type: string
+          example: "C2-домен"
+
+    FileIOC:
+      type: object
+      description: Файловый индикатор компрометации
+      properties:
+        type:
+          type: string
+          description: Тип файлового IOC (закрытое множество)
+          enum: [path, registry, filename]
+          example: "path"
+        value:
+          type: string
+          example: "C:\\Windows\\Temp\\update.exe"
+        description:
+          type: string
+          example: "Путь доставки"
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Человекочитаемое описание ошибки
+          example: "Threat not found"
+        details:
+          type: string
