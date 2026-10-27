@@ -1,0 +1,5 @@
+package: threat
+generate:
+  models: true
+  gin-server: true
+output: internal/gen/threat/threat.gen.go
