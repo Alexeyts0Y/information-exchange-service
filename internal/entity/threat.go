@@ -10,13 +10,13 @@ type Threat struct {
 
 	Name string `gorm:"column:name;type:text;not null"`
 
-	Aliases       []string `gorm:"column:aliases;type:jsonb;serializer:json"`
-	FileName      []string `gorm:"column:file_name;type:jsonb;serializer:json"`
-	Platform      []string `gorm:"column:platform;type:jsonb;serializer:json"`
-	Tags          []string `gorm:"column:tags;type:jsonb;serializer:json"`
-	References    []string `gorm:"column:references;type:jsonb;serializer:json"`
-	Behaviors     []string `gorm:"column:behaviors;type:jsonb;serializer:json"`
-	RelatedHashes []string `gorm:"column:related_hashes;type:jsonb;serializer:json"`
+	Aliases       []string `gorm:"column:aliases;type:jsonb;serializer:json;default:'[]'::jsonb"`
+	FileName      []string `gorm:"column:file_name;type:jsonb;serializer:json;default:''"`
+	Platform      []string `gorm:"column:platform;type:jsonb;serializer:json;default:''"`
+	Tags          []string `gorm:"column:tags;type:jsonb;serializer:json;default:''"`
+	References    []string `gorm:"column:references;type:jsonb;serializer:json;default:''"`
+	Behaviors     []string `gorm:"column:behaviors;type:jsonb;serializer:json;default:''"`
+	RelatedHashes []string `gorm:"column:related_hashes;type:jsonb;serializer:json;default:''"`
 
 	FileSize *int64  `gorm:"column:file_size"`
 	FileType *string `gorm:"column:file_type;type:text"`
@@ -40,9 +40,9 @@ type Threat struct {
 	DetectionRatio    *string `gorm:"column:detection_ratio;type:varchar(16)"`
 	RecommendedAction *string `gorm:"column:recommended_action;type:text"`
 
-	Detections  []Detection  `gorm:"column:detections;type:jsonb;serializer:json"`
-	NetworkIOCs []NetworkIOC `gorm:"column:network_iocs;type:jsonb;serializer:json"`
-	FileIOCs    []FileIOC    `gorm:"column:file_iocs;type:jsonb;serializer:json"`
+	Detections  []Detection  `gorm:"column:detections;type:jsonb;serializer:json;default:''"`
+	NetworkIOCs []NetworkIOC `gorm:"column:network_iocs;type:jsonb;serializer:json;default:''"`
+	FileIOCs    []FileIOC    `gorm:"column:file_iocs;type:jsonb;serializer:json;default:''"`
 
 	IsExpired *bool  `gorm:"column:is_expired"`
 	TTL       *int64 `gorm:"column:ttl"`
