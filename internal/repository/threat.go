@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/AlexeytsOY/information-exchange-service/internal/entity"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -64,13 +66,13 @@ func (r *threatRepository) Update(ctx context.Context, t *entity.Threat) (*entit
 		"sha1":               t.SHA1,
 		"sha256":             t.SHA256,
 		"name":               t.Name,
-		"aliases":            t.Aliases,
-		"file_name":          t.FileName,
-		"platform":           t.Platform,
-		"tags":               t.Tags,
-		"references":         t.References,
-		"behaviors":          t.Behaviors,
-		"related_hashes":     t.RelatedHashes,
+		"aliases":            jsonbArray(t.Aliases),
+		"file_name":          jsonbArray(t.FileName),
+		"platform":           jsonbArray(t.Platform),
+		"tags":               jsonbArray(t.Tags),
+		"references":         jsonbArray(t.References),
+		"behaviors":          jsonbArray(t.Behaviors),
+		"related_hashes":     jsonbArray(t.RelatedHashes),
 		"file_size":          t.FileSize,
 		"file_type":          t.FileType,
 		"mime_type":          t.MimeType,
@@ -86,9 +88,9 @@ func (r *threatRepository) Update(ctx context.Context, t *entity.Threat) (*entit
 		"description":        t.Description,
 		"detection_ratio":    t.DetectionRatio,
 		"recommended_action": t.RecommendedAction,
-		"detections":         t.Detections,
-		"network_iocs":       t.NetworkIOCs,
-		"file_iocs":          t.FileIOCs,
+		"detections":         jsonbArray(t.Detections),
+		"network_iocs":       jsonbArray(t.NetworkIOCs),
+		"file_iocs":          jsonbArray(t.FileIOCs),
 		"is_expired":         t.IsExpired,
 		"ttl":                t.TTL,
 		"reporter":           t.Reporter,
@@ -110,4 +112,15 @@ func (r *threatRepository) Update(ctx context.Context, t *entity.Threat) (*entit
 
 	// Перечитываем, чтобы отдать актуальные version/updated_at.
 	return r.GetByMD5(ctx, t.MD5)
+}
+
+func jsonbArray[T any](s []T) clause.Expr {
+	if s == nil {
+		s = []T{}
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		b = []byte("[]")
+	}
+	return gorm.Expr("?::jsonb", string(b))
 }
