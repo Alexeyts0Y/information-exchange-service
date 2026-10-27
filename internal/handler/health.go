@@ -2,38 +2,38 @@ package handler
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Pinger — минимальный контракт для проверки зависимости.
-// Его неявно реализует *sql.DB (и *pgxpool.Pool, если понадобится).
 type Pinger interface {
 	PingContext(ctx context.Context) error
 }
 
 type HealthHandler struct {
-	db Pinger
+	db      Pinger
+	timeout time.Duration
 }
 
-func NewHealthHandler(db Pinger) *HealthHandler {
-	return &HealthHandler{db: db}
+func NewHealthHandler(db Pinger, timeout time.Duration) *HealthHandler {
+	if timeout <= 0 {
+		timeout = 2 * time.Second
+	}
+	return &HealthHandler{db: db, timeout: timeout}
 }
 
 func (h *HealthHandler) IsHealthy(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), h.timeout)
 	defer cancel()
 
 	if err := h.db.PingContext(ctx); err != nil {
-		// В проде лучше не отдавать err наружу — только в лог.
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"status": "unhealthy",
-			"error":  err.Error(),
-		})
+		log.Printf("handler: health: db ping failed: %v", err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"status": MsgHealthUnhealthy})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"status": MsgHealthOK})
 }

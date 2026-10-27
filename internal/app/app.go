@@ -11,12 +11,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-
 	"github.com/AlexeytsOY/information-exchange-service/internal/config"
 	"github.com/AlexeytsOY/information-exchange-service/internal/database"
+	threatapi "github.com/AlexeytsOY/information-exchange-service/internal/gen/threat"
 	"github.com/AlexeytsOY/information-exchange-service/internal/handler"
+	"github.com/AlexeytsOY/information-exchange-service/internal/middleware"
+	"github.com/AlexeytsOY/information-exchange-service/internal/repository"
+	"github.com/AlexeytsOY/information-exchange-service/internal/service"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type App struct {
@@ -28,7 +31,7 @@ func New(cfg *config.Config) *App {
 }
 
 func (app *App) Run() error {
-	db, err := database.NewPostgres(context.Background(), app.cfg.DB)
+	db, err := database.New(context.Background(), app.cfg.DB)
 	if err != nil {
 		return fmt.Errorf("app: database: %w", err)
 	}
@@ -52,9 +55,11 @@ func (app *App) Run() error {
 	app.registerHandlers(router, db, sqlDB)
 
 	srv := &http.Server{
-		Addr:        ":" + app.cfg.App.Port,
-		Handler:     router,
-		ReadTimeout: app.cfg.App.ReadTimeout,
+		Addr:         ":" + app.cfg.App.Port,
+		Handler:      router,
+		ReadTimeout:  app.cfg.App.ReadTimeout,
+		WriteTimeout: app.cfg.App.WriteTimeout,
+		IdleTimeout:  app.cfg.App.IdleTimeout,
 	}
 
 	go app.gracefulShutdown(srv)
@@ -82,14 +87,20 @@ func (app *App) gracefulShutdown(srv *http.Server) {
 }
 
 func (app *App) setupMiddlewares(router *gin.Engine) {
-	router.Use(gin.Logger(), gin.Recovery())
-	// Обязательно после gin.Default/New — иначе warning «trusted all proxies».
+	router.Use(middleware.Logger(), gin.Recovery())
 	if err := router.SetTrustedProxies(nil); err != nil {
 		log.Printf("app: trusted proxies: %v", err)
 	}
 }
 
 func (app *App) registerHandlers(router *gin.Engine, db *gorm.DB, sqlDB *sql.DB) {
-	// threat.RegisterHandlers(router, handler.NewThreatHandler(db))
-	router.GET("/health", handler.NewHealthHandler(sqlDB).IsHealthy)
+	threatRepository := repository.NewThreatRepository(db)
+	threatService := service.NewThreatService(threatRepository)
+	threatHandler := handler.NewThreatHandler(threatService)
+
+	threatapi.RegisterHandlersWithOptions(router, threatHandler, threatapi.GinServerOptions{
+		ErrorHandler: handler.ErrorHandler,
+	})
+
+	router.GET("/health", handler.NewHealthHandler(sqlDB, app.cfg.App.HealthTimeout).IsHealthy)
 }

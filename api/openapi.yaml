@@ -355,6 +355,7 @@ components:
           example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         name:
           type: string
+          minLength: 1
           description: Название угрозы
           example: "Trojan.Win32.Generic"
         aliases:
@@ -529,6 +530,7 @@ components:
           example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         name:
           type: string
+          minLength: 1
           description: Название угрозы
           example: "Trojan.Win32.Generic"
         aliases:
