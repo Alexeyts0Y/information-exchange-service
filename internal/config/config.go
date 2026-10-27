@@ -20,7 +20,10 @@ type App struct {
 	Env             string
 	Port            string
 	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
 	ShutdownTimeout time.Duration
+	HealthTimeout   time.Duration
 }
 
 type DB struct {
@@ -35,10 +38,10 @@ type DB struct {
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
 	ConnMaxIdleTime time.Duration
+	PingTimeout     time.Duration
 	LogLevel        string
 }
 
-// GetDsn собирает DSN из частей.
 func (d DB) GetDsn() (string, error) {
 	var missing []string
 	if d.Host == "" {
@@ -74,7 +77,10 @@ func Load() (*Config, error) {
 			Env:             getenv("APP_ENV", "development"),
 			Port:            getenv("APP_PORT", "8080"),
 			ReadTimeout:     mustDuration("APP_READ_TIMEOUT", 5*time.Second),
+			WriteTimeout:    mustDuration("APP_WRITE_TIMEOUT", 10*time.Second),
+			IdleTimeout:     mustDuration("APP_IDLE_TIMEOUT", 60*time.Second),
 			ShutdownTimeout: mustDuration("APP_SHUTDOWN_TIMEOUT", 5*time.Second),
+			HealthTimeout:   mustDuration("APP_HEALTH_TIMEOUT", 2*time.Second),
 		},
 		DB: DB{
 			Host:            getenv("DB_HOST", "localhost"),
@@ -87,6 +93,7 @@ func Load() (*Config, error) {
 			MaxIdleConns:    mustInt("DB_MAX_IDLE_CONNS", 5),
 			ConnMaxLifetime: mustDuration("DB_CONN_MAX_LIFETIME", 30*time.Minute),
 			ConnMaxIdleTime: mustDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
+			PingTimeout:     mustDuration("DB_PING_TIMEOUT", 5*time.Second),
 			LogLevel:        getenv("DB_LOG_LEVEL", "warn"),
 		},
 	}

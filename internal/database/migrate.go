@@ -4,16 +4,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/AlexeytsOY/information-exchange-service/internal/migrations"
 	"github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"gorm.io/gorm"
-
-	"github.com/AlexeytsOY/information-exchange-service/internal/migrations"
 )
 
-// Migrate применяет все новые миграции из embedded FS.
-// Возвращает nil, если применять нечего.
 func Migrate(db *gorm.DB) error {
 	sqlDB, err := db.DB()
 	if err != nil {

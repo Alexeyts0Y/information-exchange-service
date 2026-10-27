@@ -6,15 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlexeytsOY/information-exchange-service/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	"github.com/AlexeytsOY/information-exchange-service/internal/config"
 )
 
-// NewPostgres открывает пул соединений GORM, настраивает pool и пингует БД.
-func NewPostgres(ctx context.Context, cfg config.DB) (*gorm.DB, error) {
+func New(ctx context.Context, cfg config.DB) (*gorm.DB, error) {
 	dsn, err := cfg.GetDsn()
 	if err != nil {
 		return nil, fmt.Errorf("database: dsn: %w", err)
@@ -38,7 +36,7 @@ func NewPostgres(ctx context.Context, cfg config.DB) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 	sqlDB.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, cfg.PingTimeout)
 	defer cancel()
 	if err := sqlDB.PingContext(pingCtx); err != nil {
 		_ = sqlDB.Close()

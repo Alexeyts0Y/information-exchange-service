@@ -34,7 +34,6 @@ type Threat struct {
 	FirstSeen *time.Time `gorm:"column:first_seen"`
 	LastSeen  *time.Time `gorm:"column:last_seen"`
 
-	// Вложенные value objects.
 	Source *ThreatSource `gorm:"column:source;type:jsonb;serializer:json"`
 
 	Description       *string `gorm:"column:description;type:text"`
@@ -56,31 +55,26 @@ type Threat struct {
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
 
-// TableName задаёт явное имя таблицы.
 func (Threat) TableName() string { return "threats" }
 
-// ThreatSource — источник данных об угрозе (value object).
 type ThreatSource struct {
 	Name *string `json:"name,omitempty"`
 	Type *string `json:"type,omitempty"`
 	URL  *string `json:"url,omitempty"`
 }
 
-// Detection — детект антивирусного движка (value object).
 type Detection struct {
 	Engine    *string `json:"engine,omitempty"`
 	Version   *string `json:"version,omitempty"`
 	Signature *string `json:"signature,omitempty"`
 }
 
-// NetworkIOC — сетевой индикатор компрометации (value object).
 type NetworkIOC struct {
 	Type        *string `json:"type,omitempty"`
 	Value       *string `json:"value,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
 
-// FileIOC — файловый индикатор компрометации (value object).
 type FileIOC struct {
 	Type        *string `json:"type,omitempty"`
 	Value       *string `json:"value,omitempty"`
