@@ -13,12 +13,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-// StartPostgres поднимает ephemeral Postgres 16 в Docker и возвращает
-// готовый config.DB для database.New.
-//
-// Возвращаемая cleanup-функция останавливает контейнер. Вызывать её нужно
-// явно (обычно из TestMain) — testcontainers' собственный T.Cleanup здесь
-// не работает, потому что TestMain не принимает *testing.T.
 func StartPostgres() (cfg config.DB, cleanup func(), err error) {
 	ctx := context.Background()
 

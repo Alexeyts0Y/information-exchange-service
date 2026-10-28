@@ -38,7 +38,7 @@ func TestNewThreatService_PanicsOnNilRepo(t *testing.T) {
 func TestService_Create(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		repo := &mockRepo{
-			createFn: func(ctx context.Context, th *entity.Threat) (*entity.Threat, error) {
+			createFn: func(_ context.Context, th *entity.Threat) (*entity.Threat, error) {
 				if th.MD5 != "d41d8cd98f00b204e9800998ecf8427e" {
 					t.Errorf("md5 not normalized: %q", th.MD5)
 				}
@@ -61,7 +61,7 @@ func TestService_Create(t *testing.T) {
 
 	t.Run("nil context", func(t *testing.T) {
 		svc := NewThreatService(&mockRepo{})
-		_, err := svc.Create(nil, &apithreat.ThreatCreateRequest{})
+		_, err := svc.Create(nil, &apithreat.ThreatCreateRequest{}) //nolint:staticcheck // SA1012: intentionally nil to verify service rejects it
 		if !errors.Is(err, ErrInvalidArgument) {
 			t.Fatalf("err: %v", err)
 		}
@@ -90,7 +90,7 @@ func TestService_Create(t *testing.T) {
 func TestService_Get(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		repo := &mockRepo{
-			getFn: func(ctx context.Context, md5 string) (*entity.Threat, error) {
+			getFn: func(_ context.Context, md5 string) (*entity.Threat, error) {
 				if md5 != "d41d8cd98f00b204e9800998ecf8427e" {
 					t.Errorf("md5 not lowercased: %q", md5)
 				}
@@ -106,7 +106,7 @@ func TestService_Get(t *testing.T) {
 
 	t.Run("nil context", func(t *testing.T) {
 		svc := NewThreatService(&mockRepo{})
-		_, err := svc.Get(nil, "x")
+		_, err := svc.Get(nil, "x") //nolint:staticcheck // SA1012: intentionally nil to verify service rejects it
 		if !errors.Is(err, ErrInvalidArgument) {
 			t.Fatalf("err: %v", err)
 		}
@@ -141,7 +141,7 @@ func TestService_Update(t *testing.T) {
 			},
 			updateFn: func(_ context.Context, th *entity.Threat) (*entity.Threat, error) {
 				gotVer = th.Version
-				th.Version = th.Version + 1
+				th.Version++
 				return th, nil
 			},
 		}
@@ -199,7 +199,7 @@ func TestService_Update(t *testing.T) {
 
 	t.Run("nil ctx", func(t *testing.T) {
 		svc := NewThreatService(&mockRepo{})
-		_, err := svc.Update(nil, "x", &apithreat.ThreatUpdateRequest{Name: "n"})
+		_, err := svc.Update(nil, "x", &apithreat.ThreatUpdateRequest{Name: "n"}) //nolint:staticcheck // SA1012: intentionally nil to verify service rejects it
 		if !errors.Is(err, ErrInvalidArgument) {
 			t.Fatalf("err: %v", err)
 		}
