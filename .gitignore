@@ -13,11 +13,12 @@
 
 # Code coverage profiles and other test artifacts
 *.out
+.coverage
 coverage.*
 !coverage.go
 *.coverprofile
 profile.cov
-
+bin
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
@@ -30,4 +31,4 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
