@@ -66,8 +66,10 @@ linters:
     rules:
       - linters:
           - bodyclose
+          - cyclop 
           - dupl
           - funlen
+          - gocognit 
           - goconst
           - gosec
           - noctx

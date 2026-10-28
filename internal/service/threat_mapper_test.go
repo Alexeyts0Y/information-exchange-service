@@ -9,9 +9,7 @@ import (
 )
 
 func strPtr(s string) *string { return &s }
-func intPtr(i int) *int       { return &i }
 func int32Ptr(i int32) *int32 { return &i }
-func int64Ptr(i int64) *int64 { return &i }
 
 func TestFromCreateRequest(t *testing.T) {
 	sha1 := "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709"

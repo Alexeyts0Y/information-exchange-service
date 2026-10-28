@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/openapi-ui/go-openapi-ui/pkg/doc"
 )
 
 type Config struct {
 	App App
 	DB  DB
+	Doc doc.Doc
 }
 
 type App struct {
@@ -95,6 +97,14 @@ func Load() (*Config, error) {
 			ConnMaxIdleTime: mustDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
 			PingTimeout:     mustDuration("DB_PING_TIMEOUT", 5*time.Second),
 			LogLevel:        getenv("DB_LOG_LEVEL", "warn"),
+		},
+		Doc: doc.Doc{
+			Title:       "Information exchange service",
+			Description: "API для обмена информацией об угрозах.",
+			SpecFile:    "api/openapi.yaml",
+			SpecPath:    "/openapi.yaml",
+			DocsPath:    "/docs",
+			Theme:       "light",
 		},
 	}
 

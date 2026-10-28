@@ -19,6 +19,7 @@ import (
 	"github.com/AlexeytsOY/information-exchange-service/internal/repository"
 	"github.com/AlexeytsOY/information-exchange-service/internal/service"
 	"github.com/gin-gonic/gin"
+	ginopenapiui "github.com/openapi-ui/go-openapi-ui/pkg/middleware/gin"
 	"gorm.io/gorm"
 )
 
@@ -103,4 +104,6 @@ func (app *App) registerHandlers(router *gin.Engine, db *gorm.DB, sqlDB *sql.DB)
 	})
 
 	router.GET("/health", handler.NewHealthHandler(sqlDB, app.cfg.App.HealthTimeout).IsHealthy)
+
+	router.Use(ginopenapiui.New(app.cfg.Doc))
 }

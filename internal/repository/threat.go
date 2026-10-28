@@ -110,7 +110,6 @@ func (r *threatRepository) Update(ctx context.Context, t *entity.Threat) (*entit
 		return nil, ErrVersionConflict
 	}
 
-	// Перечитываем, чтобы отдать актуальные version/updated_at.
 	return r.GetByMD5(ctx, t.MD5)
 }
 

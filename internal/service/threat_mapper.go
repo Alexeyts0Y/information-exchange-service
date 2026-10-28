@@ -93,13 +93,6 @@ func fromCreateRequest(req *apithreat.ThreatCreateRequest) *entity.Threat {
 	return t
 }
 
-// applyReplace полностью заменяет пользовательские поля существующей
-// сущности значениями из запроса (семантика HTTP PUT: отсутствующие в
-// запросе опциональные поля обнуляются, а не сохраняют прежние значения).
-//
-// Поля, управляемые сервером (MD5 из path, Version для оптимистичной
-// блокировки, CreatedAt/UpdatedAt), здесь не трогаются — их выставляет
-// repository и GORM.
 func applyReplace(t *entity.Threat, req *apithreat.ThreatUpdateRequest) {
 	t.Name = req.Name
 	t.SHA1 = lowerStringPtr(req.Sha1)

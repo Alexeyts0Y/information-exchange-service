@@ -12,6 +12,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/joho/godotenv v1.5.1
 	github.com/oapi-codegen/runtime v1.8.0
+	github.com/openapi-ui/go-openapi-ui v0.2.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	gorm.io/driver/postgres v1.6.3
 	gorm.io/gorm v1.31.2
